@@ -1,15 +1,17 @@
 #include "pcb.h"
 #include "queue.h"
+#include "scheduler.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 // -------------------------------
 //    TRES COLAS DE LISTOS
 // -------------------------------
 
-static Queue ready_high;
-static Queue ready_med;
-static Queue ready_low;
+static queue_t ready_high;
+static queue_t ready_med;
+static queue_t ready_low;
 
 // Proceso actualmente ejecutándose
 static PCB *current_process = NULL;
@@ -82,8 +84,6 @@ PCB* scheduler_current(void) {
 // -------------------------------
 void scheduler_switch(PCB *next) {
     if (!next) return;
-
-    PCB *prev = current_process;
     current_process = next;
 
     next->state = PROC_RUNNING;
@@ -118,6 +118,21 @@ void scheduler_run(void (*print)(const char*)) {
         snprintf(buf, sizeof(buf), "[scheduler] Ejecutando PID %d\n", next->pid);
         print(buf);
 
+        scheduler_switch(next);
+    }
+}
+
+// -------------------------------
+//   Yield cooperativo
+// -------------------------------
+void scheduler_yield(void) {
+    PCB *current = scheduler_current();
+    if (current && current->state == PROC_RUNNING) {
+        scheduler_add_ready(current);
+    }
+
+    PCB *next = scheduler_pick_next();
+    if (next) {
         scheduler_switch(next);
     }
 }

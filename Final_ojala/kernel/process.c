@@ -1,5 +1,7 @@
 #include "pcb.h"
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define PROCESS_STACK_SIZE 4096
@@ -8,12 +10,15 @@
 static PCB proc_table[MAX_PROCESSES];
 static int next_pid = 1;
 
+static void default_process_body(void);
+
 // ---------------------------
 //  Inicialización global
 // ---------------------------
 void process_init(void) {
     for (int i = 0; i < MAX_PROCESSES; i++) {
         proc_table[i].state = PROC_UNUSED;
+        proc_table[i].first_run = 0;
     }
 }
 
@@ -35,7 +40,7 @@ static int find_free_slot(void) {
 // ---------------------------
 //  Crear proceso real
 // ---------------------------
-int process_create(const char *name, proc_prio_t prio, void (*entry)(void)) {
+int process_create(const char *name, proc_prio_t prio) {
     int slot = find_free_slot();
     if (slot < 0) return -1;
 
@@ -54,8 +59,9 @@ int process_create(const char *name, proc_prio_t prio, void (*entry)(void)) {
     // Estado inicial
     p->state = PROC_NEW;
 
-    // Función del proceso
-    p->entry = entry;
+    // Función del proceso (usa una de demostración si no se pasa otra)
+    p->entry = default_process_body;
+    p->first_run = 0;
 
     // Crear pila del proceso
     p->stack_size = PROCESS_STACK_SIZE;
@@ -67,11 +73,11 @@ int process_create(const char *name, proc_prio_t prio, void (*entry)(void)) {
     }
 
     // Configurar contexto inicial
-    uint32_t stack_top = (uint32_t)(p->stack_base + p->stack_size);
+    uintptr_t stack_top = (uintptr_t)(p->stack_base + p->stack_size);
 
     p->ctx.esp = stack_top;
     p->ctx.ebp = stack_top;
-    p->ctx.eip = (uint32_t) entry;
+    p->ctx.eip = (uintptr_t) p->entry;
 
     // Proceso listo para scheduler
     p->state = PROC_READY;
@@ -172,4 +178,11 @@ PCB* process_get(int pid) {
         }
     }
     return 0;
+}
+
+// ---------------------------
+//  Proceso de demostración
+// ---------------------------
+static void default_process_body(void) {
+    printf("[demo process] Ejecutando tarea de ejemplo...\n");
 }

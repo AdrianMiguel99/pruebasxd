@@ -1,9 +1,13 @@
 #include <stdint.h>
-#include "pcb.h"
+#include <stdlib.h>
 #include "process.h"
 #include "scheduler.h"
 #include "queue.h"
 #include "syscall.h"
+
+// Declaraciones de inicialización básica
+void idt_init(void);
+void keyboard_init(void);
 
 // ---------------------------------------------------------
 //  VIDEO MODE 0xB8000 — simple print
