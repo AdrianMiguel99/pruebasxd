@@ -12,8 +12,22 @@ void keyboard_init(void);
 // ---------------------------------------------------------
 //  VIDEO MODE 0xB8000 — simple print
 // ---------------------------------------------------------
-static int cursor_pos = 0;
+#ifdef HOST_SIM
+static void flush_stdout(void) {
+    fflush(stdout);
+}
+
+// En modo simulado, escribe a stdout para evitar accesos a 0xB8000
+void kprint(const char *s) {
+    fputs(s, stdout);
+    flush_stdout();
+}
+
+// Para syscall.c (el kernel exporta esta función)
+void kprint_sys(const char *s) { kprint(s); }
+#else
 static char *video = (char*)0xB8000;
+static int cursor_pos = 0;
 
 void kprint(const char *s) {
     while (*s) {
@@ -32,6 +46,7 @@ void kprint(const char *s) {
 
 // Para syscall.c (el kernel exporta esta función)
 void kprint_sys(const char *s) { kprint(s); }
+#endif
 
 // ---------------------------------------------------------
 //  KEYBOARD INPUT (IRQ1 usa keyboard_buffer[])
@@ -40,12 +55,17 @@ extern volatile char keyboard_buffer[256];
 extern volatile int kb_head, kb_tail;
 
 char getchar_blocking(void) {
+#ifdef HOST_SIM
+    int c = getchar();
+    return (c == EOF) ? '\n' : (char)c;
+#else
     while (kb_head == kb_tail) {
         __asm__ volatile("hlt");
     }
     char c = keyboard_buffer[kb_tail];
     kb_tail = (kb_tail + 1) & 0xFF;
     return c;
+#endif
 }
 
 // leer línea estilo BIOS
@@ -158,7 +178,11 @@ void menu_principal(void) {
 
         if (op == '1') {
             kprint("Deteniendo CPU...\n");
+#ifdef HOST_SIM
+            return;
+#else
             while (1) __asm__ volatile("hlt");
+#endif
         }
 
         if (op == '2') {
@@ -182,7 +206,9 @@ void kernel_main(void) {
     idt_init();             // la implementas en idt.asm + idt.c
     keyboard_init();        // la implementas en irq_keyboard.asm + keyboard.c
 
+#ifndef HOST_SIM
     __asm__ volatile("sti");  // habilitar interrupciones
+#endif
 
     menu_principal();
 }
