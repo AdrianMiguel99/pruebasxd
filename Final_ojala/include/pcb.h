@@ -3,73 +3,44 @@
 
 #include <stdint.h>
 
-/* ============================================================
-   ESTADOS DEL PROCESO
-   ============================================================ */
+#define MAX_PROCESSES 32
+#define PROC_NAME_LEN 16
 
+// Estados del proceso
 typedef enum {
     PROC_UNUSED = 0,
+    PROC_NEW,
     PROC_READY,
     PROC_RUNNING,
-    PROC_WAITING,
+    PROC_BLOCKED,
     PROC_ZOMBIE
 } proc_state_t;
 
-/* ============================================================
-   PRIORIDADES (COLA MULTINIVEL)
-   0 = Alta  | 1 = Media | 2 = Baja
-   ============================================================ */
-
+// Prioridades (0 = alta)
 typedef enum {
     PRIO_HIGH = 0,
-    PRIO_MEDIUM = 1,
-    PRIO_LOW = 2
-} proc_priority_t;
+    PRIO_MED  = 1,
+    PRIO_LOW  = 2
+} proc_prio_t;
 
-/* ============================================================
-   PCB — Process Control Block
-   ============================================================ */
+// Contexto mínimo de CPU (placeholder para futuros switches de contexto)
+typedef struct cpu_context {
+    uintptr_t esp;
+    uintptr_t ebp;
+    uintptr_t eip;
+} cpu_context_t;
 
-typedef struct pcb {
-    uint32_t pid;
-    char name[16];
-
-    proc_state_t state;
-    proc_priority_t priority;
-
-    /* Dirección de ejecución del proceso */
-    void (*entry)(struct pcb *);
-
-    /* Siguiente nodo en la cola de scheduler */
-    struct pcb *next;
-} pcb_t;
-
-/* ============================================================
-   TABLA GLOBAL DE PROCESOS
-   ============================================================ */
-
-#define MAX_PROCS 32
-
-extern pcb_t pcb_table[MAX_PROCS];
-extern uint32_t next_pid;
-
-/* ============================================================
-   API DE MANEJO DE PROCESOS (process.c)
-   ============================================================ */
-
-/* Inicializar tabla de PCBs */
-void process_init(void);
-
-/* Crear un proceso */
-int process_create(const char *name, proc_priority_t prio);
-
-/* Listar procesos */
-void process_list(void);
-
-/* Ejecutar un proceso (sin scheduler todavía) */
-int process_run(uint32_t pid);
-
-/* Matar un proceso */
-int process_kill(uint32_t pid);
+// PCB: Process Control Block
+typedef struct PCB {
+    int           pid;
+    char          name[PROC_NAME_LEN];
+    proc_state_t  state;
+    proc_prio_t   priority;
+    cpu_context_t ctx;
+    void        (*entry)(void);
+    uint8_t      *stack_base;
+    uint32_t      stack_size;
+    uint8_t       first_run;
+} PCB;
 
 #endif /* PCB_H */
