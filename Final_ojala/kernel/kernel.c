@@ -4,6 +4,7 @@
 #include "scheduler.h"
 #include "queue.h"
 #include "syscall.h"
+#include <stdlib.h>
 
 // ---------------------------------------------------------
 //  VIDEO MODE 0xB8000 — simple print
@@ -42,6 +43,15 @@ char getchar_blocking(void) {
     char c = keyboard_buffer[kb_tail];
     kb_tail = (kb_tail + 1) & 0xFF;
     return c;
+}
+
+static int atoi_simple(const char *s) {
+    int value = 0;
+    while (*s >= '0' && *s <= '9') {
+        value = value * 10 + (*s - '0');
+        s++;
+    }
+    return value;
 }
 
 // leer línea estilo BIOS
@@ -114,7 +124,7 @@ void menu_procesos(void) {
             case 'k': {
                 kprint("PID a matar: ");
                 readline(buf, sizeof(buf));
-                int pid = atoi(buf);
+                int pid = atoi_simple(buf);
                 process_kill(pid);
                 break;
             }
@@ -122,7 +132,7 @@ void menu_procesos(void) {
             case 'r': {
                 kprint("PID a ejecutar: ");
                 readline(buf, sizeof(buf));
-                int pid = atoi(buf);
+                int pid = atoi_simple(buf);
                 process_run(pid, kprint);
                 break;
             }

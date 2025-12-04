@@ -1,12 +1,19 @@
 #include "pcb.h"
+#include "scheduler.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define PROCESS_STACK_SIZE 4096
 
 // Tabla global de procesos
 static PCB proc_table[MAX_PROCESSES];
 static int next_pid = 1;
+
+static void default_entry(void) {
+    // Proceso de prueba que simplemente retorna
+}
 
 // ---------------------------
 //  Inicialización global
@@ -35,7 +42,7 @@ static int find_free_slot(void) {
 // ---------------------------
 //  Crear proceso real
 // ---------------------------
-int process_create(const char *name, proc_prio_t prio, void (*entry)(void)) {
+int process_create(const char *name, proc_prio_t prio) {
     int slot = find_free_slot();
     if (slot < 0) return -1;
 
@@ -55,7 +62,8 @@ int process_create(const char *name, proc_prio_t prio, void (*entry)(void)) {
     p->state = PROC_NEW;
 
     // Función del proceso
-    p->entry = entry;
+    p->entry = default_entry;
+    p->first_run = false;
 
     // Crear pila del proceso
     p->stack_size = PROCESS_STACK_SIZE;
@@ -71,10 +79,11 @@ int process_create(const char *name, proc_prio_t prio, void (*entry)(void)) {
 
     p->ctx.esp = stack_top;
     p->ctx.ebp = stack_top;
-    p->ctx.eip = (uint32_t) entry;
+    p->ctx.eip = (uint32_t) p->entry;
 
     // Proceso listo para scheduler
     p->state = PROC_READY;
+    scheduler_add_ready(p);
 
     return p->pid;
 }
