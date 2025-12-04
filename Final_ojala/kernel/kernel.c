@@ -1,8 +1,5 @@
 #include <stdint.h>
 #include <stdlib.h>
-#ifdef HOST_SIM
-#include <stdio.h>
-#endif
 #include "process.h"
 #include "scheduler.h"
 #include "queue.h"

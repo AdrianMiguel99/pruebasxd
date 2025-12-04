@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -g -Iinclude -Ikernel -DHOST_SIM
+CFLAGS = -std=c11 -Wall -Wextra -g -Iinclude -Ikernel
 
 SRC := $(wildcard kernel/*.c)
 OBJ := $(SRC:.c=.o)
