@@ -2,14 +2,15 @@
 #include "queue.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 // -------------------------------
 //    TRES COLAS DE LISTOS
 // -------------------------------
 
-static Queue ready_high;
-static Queue ready_med;
-static Queue ready_low;
+static queue_t ready_high;
+static queue_t ready_med;
+static queue_t ready_low;
 
 // Proceso actualmente ejecutándose
 static PCB *current_process = NULL;
@@ -89,8 +90,8 @@ void scheduler_switch(PCB *next) {
     next->state = PROC_RUNNING;
 
     // Si el proceso nunca ha corrido, entrar a la función
-    if (next->ctx.eip != 0 && next->first_run == 0) {
-        next->first_run = 1;
+    if (next->ctx.eip != 0 && next->first_run == false) {
+        next->first_run = true;
         next->entry();  // << Proceso real
         next->state = PROC_ZOMBIE;
         return;
@@ -118,6 +119,17 @@ void scheduler_run(void (*print)(const char*)) {
         snprintf(buf, sizeof(buf), "[scheduler] Ejecutando PID %d\n", next->pid);
         print(buf);
 
+        scheduler_switch(next);
+    }
+}
+
+void scheduler_yield(void) {
+    if (current_process && current_process->state == PROC_RUNNING) {
+        scheduler_add_ready(current_process);
+    }
+
+    PCB *next = scheduler_pick_next();
+    if (next) {
         scheduler_switch(next);
     }
 }

@@ -2,6 +2,7 @@
 #define PCB_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define MAX_PROCESSES 32
 #define PROC_NAME_LEN 16
@@ -53,6 +54,7 @@ typedef struct PCB {
     proc_prio_t  priority;                    // prioridad (para colas)
     cpu_context_t ctx;                        // contexto de CPU
     void       (*entry)(void);                // función de entrada del proceso
+    bool         first_run;                   // ¿ya se ejecutó la función entry?
 
     // Puntero a la pila del proceso (stack propio)
     uint8_t*     stack_base;
